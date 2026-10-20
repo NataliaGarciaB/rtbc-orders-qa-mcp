@@ -1,5 +1,6 @@
 import { ESTADOS, type Estado, type Transicion } from '../core/modelos.js';
 import { FormatoInvalidoError } from './errores.js';
+import { filasDeTabla } from './markdown.js';
 
 const SECCION = '## Matriz completa de transiciones';
 const ESPERADO =
@@ -33,24 +34,6 @@ export function leerMaquinaEstados(markdown: string, archivo = 'docs/maquina-est
 	);
 
 	return transiciones.sort((a, b) => indice(a.origen) - indice(b.origen) || indice(a.destino) - indice(b.destino));
-}
-
-/** Filas de la primera tabla Markdown que aparece después del título indicado, como listas de celdas. */
-function filasDeTabla(markdown: string, titulo: string): string[][] {
-	const lineas = markdown.split(/\r?\n/);
-	const inicio = lineas.findIndex((linea) => linea.trim() === titulo);
-	if (inicio < 0) return [];
-
-	const tabla: string[][] = [];
-	for (const linea of lineas.slice(inicio + 1)) {
-		const texto = linea.trim();
-		if (texto.startsWith('|')) {
-			tabla.push(texto.slice(1, texto.endsWith('|') ? -1 : undefined).split('|').map((celda) => celda.trim()));
-		} else if (tabla.length > 0) {
-			break;
-		}
-	}
-	return tabla;
 }
 
 function sinFormato(celda: string): string {
