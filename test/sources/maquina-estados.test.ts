@@ -51,6 +51,20 @@ describe('Lector de la máquina de estados (docs/maquina-estados.md)', () => {
 		expect(transiciones).toContainEqual({ origen: 'CREADA', destino: 'PAGADA', http: 200, valida: true });
 	});
 
+	it('ordena por ciclo de vida aunque las filas de la tabla estén en otro orden', () => {
+		const original = artefacto(ARCHIVO);
+		const lineas = original.split('\n');
+		const posicionCancelada = lineas.findIndex((linea) => linea.startsWith('| **CANCELADA** |'));
+		const posicionCreada = lineas.findIndex((linea) => linea.startsWith('| **CREADA** |'));
+		const [filaCancelada = ''] = lineas.splice(posicionCancelada, 1);
+		lineas.splice(posicionCreada, 0, filaCancelada);
+		const desordenada = lineas.join('\n');
+
+		expect(desordenada).not.toEqual(original);
+
+		expect(leerMaquinaEstados(desordenada)).toEqual(leerMaquinaEstados(original));
+	});
+
 	it('devuelve el mismo resultado en lecturas sucesivas (Q07)', () => {
 		expect(leerMaquinaEstados(artefacto(ARCHIVO))).toEqual(leerMaquinaEstados(artefacto(ARCHIVO)));
 	});
