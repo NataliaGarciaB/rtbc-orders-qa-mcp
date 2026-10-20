@@ -15,3 +15,20 @@ export interface Transicion {
 	/** Regla de negocio que explica el rechazo, si la celda la menciona (por ejemplo RN-05). */
 	regla?: string;
 }
+
+export type NivelRiesgo = 'Alto' | 'Medio' | 'Bajo';
+
+/** Riesgo de la matriz del proyecto (probabilidad × impacto = puntaje). */
+export interface Riesgo {
+	id: string;
+	descripcion: string;
+	/** Reglas de negocio que afecta (vacío si es transversal). */
+	reglas: string[];
+	nivel: NivelRiesgo;
+	puntaje: number;
+}
+
+export interface ReglaNegocio {
+	id: string;
+	descripcion: string;
+}
