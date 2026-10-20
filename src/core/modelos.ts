@@ -84,3 +84,12 @@ export interface EscenarioKarate {
 	etiquetas: string[];
 	peticiones: PeticionKarate[];
 }
+
+/** Un método de prueba JUnit con sus etiquetas, incluidas las heredadas de las clases que lo contienen. */
+export interface PruebaJUnit {
+	archivo: string;
+	/** Clase con sus clases anidadas, por ejemplo `OrderTest.AlMenosUnProducto`. */
+	clase: string;
+	metodo: string;
+	etiquetas: string[];
+}
