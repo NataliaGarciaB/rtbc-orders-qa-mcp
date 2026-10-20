@@ -55,6 +55,28 @@ describe('Lector del contrato OpenAPI (docs/api/openapi.yaml)', () => {
 		]);
 	});
 
+	it('ordena las respuestas aunque el contrato las declare desordenadas e ignora "default"', () => {
+		const contrato = [
+			'openapi: 3.0.3',
+			'paths:',
+			'  /z:',
+			'    delete:',
+			'      responses: { "404": {}, "200": {} }',
+			'  /a:',
+			'    post:',
+			'      responses: { "201": {}, default: {} }',
+			'    get:',
+			'      responses: { "200": {} }',
+		].join('\n');
+
+		expect(leerContrato(contrato).respuestas.map((r) => `${r.metodo} ${r.ruta} ${r.http}`)).toEqual([
+			'GET /a 200',
+			'POST /a 201',
+			'DELETE /z 200',
+			'DELETE /z 404',
+		]);
+	});
+
 	it('distingue los campos opcionales', () => {
 		const contrato = artefacto(ARCHIVO).replace('required: [cliente, productos]', 'required: [productos]');
 
