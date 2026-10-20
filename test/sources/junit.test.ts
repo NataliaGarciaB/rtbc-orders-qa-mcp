@@ -94,4 +94,28 @@ describe('Lector de pruebas JUnit (trazabilidad por @Tag)', () => {
 			'Ejemplo.fabrica [RN-01]',
 		]);
 	});
+
+	it('no toma como prueba una llamada en un campo ni un @Tag con constante', () => {
+		const fuente = `
+			class Campos {
+				private static final List<Integer> NUMEROS = List.of(1, 2);
+				private final char comilla = '"';
+
+				@Test
+				@Tag(ETIQUETA)
+				void conConstante() { }
+			}`;
+
+		expect(resumen(leerPruebasJUnit(fuente, 'Campos.java'))).toEqual(['Campos.conConstante []']);
+	});
+
+	it('un comentario al final del archivo, sin salto de línea, no altera la estructura', () => {
+		const fuente = ['@Tag("RN-01")', 'class Externa {', '  @Nested', '  class Interna {', '    @Test', '    void prueba() { }', '  }', '} // fin }'].join(
+			'\n',
+		);
+		const conComentarioDeBloque = `${fuente}\n/* sin cerrar }`;
+
+		expect(resumen(leerPruebasJUnit(fuente, 'Final.java'))).toEqual(['Externa.Interna.prueba [RN-01]']);
+		expect(resumen(leerPruebasJUnit(conComentarioDeBloque, 'Final.java'))).toEqual(['Externa.Interna.prueba [RN-01]']);
+	});
 });
