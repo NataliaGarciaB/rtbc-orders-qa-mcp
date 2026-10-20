@@ -1,4 +1,4 @@
-import { ESTADOS, esEstado, type Estado, type Transicion } from '../core/modelos.js';
+import { ESTADOS, type Estado, type Transicion } from '../core/modelos.js';
 import { FormatoInvalidoError } from './errores.js';
 
 const SECCION = '## Matriz completa de transiciones';
@@ -16,24 +16,22 @@ export function leerMaquinaEstados(markdown: string, archivo = 'docs/maquina-est
 	const [encabezado, , ...cuerpo] = filas;
 	if (!encabezado) throw formatoInvalido();
 
+	// Filas y columnas deben ser exactamente los 5 estados: cubre filas faltantes, repetidas o desconocidas
 	const destinos = encabezado.slice(1);
-	if (!sonLosCincoEstados(destinos) || cuerpo.length !== ESTADOS.length) throw formatoInvalido();
+	const origenes = cuerpo.map((celdas) => sinFormato(celdas[0] ?? ''));
+	if (!sonLosCincoEstados(destinos) || !sonLosCincoEstados(origenes)) throw formatoInvalido();
 
-	const transiciones = cuerpo.flatMap((celdas) => {
-		const origen = sinFormato(celdas[0] ?? '');
-		if (!esEstado(origen) || celdas.length !== destinos.length + 1) throw formatoInvalido();
-
-		return destinos.map((destino, i) => {
-			const celda = celdas[i + 1] ?? '';
+	const transiciones = cuerpo.flatMap((celdas, fila) =>
+		destinos.map((destino, columna) => {
+			const celda = celdas[columna + 1] ?? '';
 			const http = celda.match(/\b(\d{3})\b/)?.[1];
 			if (!http) throw formatoInvalido();
 			const regla = celda.match(/\bRN-\d{2}\b/)?.[0];
-			const transicion: Transicion = { origen, destino, http: Number(http), valida: http.startsWith('2') };
+			const transicion: Transicion = { origen: origenes[fila] as Estado, destino, http: Number(http), valida: http.startsWith('2') };
 			return regla ? { ...transicion, regla } : transicion;
-		});
-	});
+		}),
+	);
 
-	if (!sonLosCincoEstados(cuerpo.map((celdas) => sinFormato(celdas[0] ?? '')))) throw formatoInvalido();
 	return transiciones.sort((a, b) => indice(a.origen) - indice(b.origen) || indice(a.destino) - indice(b.destino));
 }
 
