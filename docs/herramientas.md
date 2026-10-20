@@ -31,7 +31,7 @@ Cada herramienta devuelve el resultado estructurado (JSON) y, además, un resume
     { "origen": "CREADA", "destino": "ENVIADA", "http": 400, "valida": false, "regla": "RN-05" },
     { "origen": "ENTREGADA", "destino": "CANCELADA", "http": 409, "valida": false, "regla": "RN-04" }
   ],
-  "resumen": { "total": 25, "validas": 5, "http400": 1, "http409": 19 }
+  "resumen": { "total": 25, "validas": 6, "http400": 1, "http409": 18 }
 }
 ```
 

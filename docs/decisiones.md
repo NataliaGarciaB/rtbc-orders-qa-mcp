@@ -16,6 +16,7 @@ Cada decisión registra el contexto, la opción elegida y su consecuencia. Si un
 | [ADR-010](#adr-010-estrategia-de-pruebas-y-quality-gates) | Estrategia de pruebas y quality gates | Aceptada |
 | [ADR-011](#adr-011-versionamiento) | Versionamiento | Aceptada |
 | [ADR-012](#adr-012-typescript-60-por-compatibilidad-con-stryker) | TypeScript 6.0 por compatibilidad con Stryker | Aceptada |
+| [ADR-013](#adr-013-vitest-4-por-compatibilidad-con-stryker) | Vitest 4 por compatibilidad con Stryker | Aceptada |
 
 ---
 
@@ -102,3 +103,8 @@ Cada decisión registra el contexto, la opción elegida y su consecuencia. Si un
 - **Contexto:** TypeScript 7 es la reescritura nativa del compilador y ya no expone la API de JavaScript que Stryker 10 usa para leer el `tsconfig` (`ts.parseConfigFileTextToJson`). Con TypeScript 7, Stryker falla antes de mutar.
 - **Decisión:** TypeScript 6.0, la última versión con esa API, con el mismo modo estricto.
 - **Consecuencia:** el mutation testing funciona. Cuando Stryker soporte TypeScript 7, la actualización solo cambia la versión en `package.json`.
+
+## ADR-013: Vitest 4 por compatibilidad con Stryker
+- **Contexto:** con Vitest 5, el runner de Stryker 10 no ejecuta las pruebas al evaluar cada mutante y no informa ningún error. Sobre el primer lector, el mutation score medido fue 0 % con pruebas que sí detectan los defectos: quitar una validación a mano hacía fallar la prueba, pero Stryker reportaba el mutante como sobreviviente. La verificación del gate en la subfase 10.2 no lo detectó porque usaba una sola prueba.
+- **Decisión:** Vitest 4.1, con el que el mismo conjunto de pruebas da los resultados esperados.
+- **Consecuencia:** el gate de mutación vuelve a medir la calidad real de las pruebas. Lección incorporada a la estrategia: un quality gate se valida con un conjunto de pruebas representativo, comprobando que detecta un defecto conocido, y no solo con un caso mínimo.

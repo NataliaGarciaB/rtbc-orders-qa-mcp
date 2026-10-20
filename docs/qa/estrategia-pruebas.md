@@ -44,6 +44,8 @@ Dar confianza de que cada herramienta dice la verdad sobre los artefactos de la 
 
 Cada gate es un paso del pipeline de CI y un check obligatorio para hacer merge a `main`.
 
+**Un gate también se prueba.** Se valida introduciendo un defecto conocido sobre un conjunto de pruebas representativo y comprobando que el gate lo detecta. Una verificación con un caso mínimo no detectó que Stryker dejaba de ejecutar las pruebas con Vitest 5 ([ADR-013](../decisiones.md#adr-013-vitest-4-por-compatibilidad-con-stryker)).
+
 ## 6. Fuera de alcance
 - Rendimiento: los artefactos son pequeños y el análisis es local.
 - Otros clientes MCP distintos de Claude Code: el protocolo es estándar, pero solo se valida con el cliente del SDK y con Claude Code.
