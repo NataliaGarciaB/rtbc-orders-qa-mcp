@@ -4,7 +4,7 @@ Servidor [MCP](https://modelcontextprotocol.io) que le da a Claude Code herramie
 
 Las herramientas leen los artefactos reales de la API (contrato OpenAPI, máquina de estados, matriz de riesgos y escenarios de aceptación) y devuelven resultados verificables: qué escenarios faltan, cuáles son más riesgosos, qué datos de prueba usar y cómo se relaciona cada regla de negocio con sus pruebas. La IA razona sobre esos resultados; el cálculo lo hace código probado.
 
-> **Estado:** en diseño. El detalle está en [`docs/`](docs/).
+> **Estado:** en construcción. El diseño está completo en [`docs/`](docs/); el proyecto, la prueba de arquitectura y el pipeline con quality gates están listos.
 
 | Documento | Contenido |
 |---|---|
