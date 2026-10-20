@@ -15,6 +15,7 @@ Cada decisión registra el contexto, la opción elegida y su consecuencia. Si un
 | [ADR-009](#adr-009-skill-analisis-qa-como-flujo-de-trabajo) | Skill `/analisis-qa` como flujo de trabajo sobre las herramientas | Aceptada |
 | [ADR-010](#adr-010-estrategia-de-pruebas-y-quality-gates) | Estrategia de pruebas y quality gates | Aceptada |
 | [ADR-011](#adr-011-versionamiento) | Versionamiento | Aceptada |
+| [ADR-012](#adr-012-typescript-60-por-compatibilidad-con-stryker) | TypeScript 6.0 por compatibilidad con Stryker | Aceptada |
 
 ---
 
@@ -96,3 +97,8 @@ Cada decisión registra el contexto, la opción elegida y su consecuencia. Si un
 
 ## ADR-011: Versionamiento
 - **Decisión:** las mismas convenciones que la API: Conventional Commits en español, una rama por subfase, PR con merge commit y tags semánticos. Detalle en [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+## ADR-012: TypeScript 6.0 por compatibilidad con Stryker
+- **Contexto:** TypeScript 7 es la reescritura nativa del compilador y ya no expone la API de JavaScript que Stryker 10 usa para leer el `tsconfig` (`ts.parseConfigFileTextToJson`). Con TypeScript 7, Stryker falla antes de mutar.
+- **Decisión:** TypeScript 6.0, la última versión con esa API, con el mismo modo estricto.
+- **Consecuencia:** el mutation testing funciona. Cuando Stryker soporte TypeScript 7, la actualización solo cambia la versión en `package.json`.

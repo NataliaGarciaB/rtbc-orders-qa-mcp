@@ -6,6 +6,19 @@
 - **SOLID, DRY, KISS y YAGNI.** La lógica de análisis vive en `core` sin depender del protocolo ni del sistema de archivos ([ADR-004](docs/decisiones.md#adr-004-arquitectura-en-tres-capas)).
 - **Calidad basada en riesgo.** Ver [docs/qa/estrategia-pruebas.md](docs/qa/estrategia-pruebas.md).
 
+## Comandos
+
+Requisito: Node.js 24.
+
+| Comando | Qué hace |
+|---|---|
+| `npm ci` | Instala las dependencias exactas del `package-lock.json` |
+| `npm run typecheck` | Compila en modo estricto sin generar archivos |
+| `npm test` | Ejecuta las pruebas |
+| `npm run test:coverage` | Pruebas con cobertura; falla por debajo del 80 % (reporte en `coverage/`) |
+| `npm run mutation` | Mutation testing con Stryker; falla por debajo del 70 % (reporte en `reports/mutation/`) |
+| `npm run build` | Compila a `dist/` |
+
 ## Commits: Conventional Commits
 Formato: `tipo(ámbito opcional): descripción en español, en minúscula y en imperativo`
 
