@@ -65,3 +65,22 @@ export interface Contrato {
 	respuestas: RespuestaContrato[];
 	esquemasRequest: EsquemaRequest[];
 }
+
+/** Una petición HTTP dentro de un escenario de aceptación, con el estado de la orden en ese momento. */
+export interface PeticionKarate {
+	metodo: MetodoHttp;
+	/** Ruta con `{id}` donde el escenario usa una variable; los valores literales se conservan. */
+	ruta: string;
+	http?: number;
+	/** Estado de la orden antes de la petición, si el escenario lo establece. */
+	origen?: Estado;
+	/** Estado pedido en el body (`request { estado: '...' }`); puede ser un valor inválido a propósito. */
+	destino?: string;
+}
+
+export interface EscenarioKarate {
+	archivo: string;
+	nombre: string;
+	etiquetas: string[];
+	peticiones: PeticionKarate[];
+}
