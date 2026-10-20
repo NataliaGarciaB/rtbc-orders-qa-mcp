@@ -1,7 +1,6 @@
 import type { PruebaJUnit } from '../core/modelos.js';
 
 const ANOTACIONES_DE_PRUEBA = new Set(['Test', 'ParameterizedTest', 'RepeatedTest', 'TestFactory', 'TestTemplate']);
-const NO_SON_METODOS = new Set(['if', 'for', 'while', 'switch', 'catch', 'synchronized', 'return', 'new', 'super', 'this']);
 
 /**
  * Elementos que importan para la trazabilidad, en orden: anotaciones (con su texto si lo tienen), declaraciones de
@@ -39,7 +38,8 @@ export function leerPruebasJUnit(fuente: string, archivo: string): PruebaJUnit[]
 			clasePendiente = undefined;
 		} else if (llave === '}') {
 			ambitos.pop();
-		} else if (nombre && !NO_SON_METODOS.has(nombre)) {
+		} else if (nombre) {
+			// Entre las anotaciones de una prueba y su nombre no hay otras llamadas: el primer nombre seguido de ( es el método
 			if (esPrueba) {
 				const clases = ambitos.filter((ambito) => ambito.clase !== undefined);
 				pruebas.push({
@@ -77,7 +77,8 @@ function limpiar(fuente: string): { codigo: string; textos: string[] } {
 
 	while (i < fuente.length) {
 		if (fuente.startsWith('//', i)) {
-			i = hasta('\n', i) - 1;
+			const finDeLinea = fuente.indexOf('\n', i);
+			i = finDeLinea < 0 ? fuente.length : finDeLinea;
 		} else if (fuente.startsWith('/*', i)) {
 			i = hasta('*/', i);
 		} else if (fuente.startsWith('"""', i)) {
