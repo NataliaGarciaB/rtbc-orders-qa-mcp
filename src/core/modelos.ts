@@ -32,3 +32,36 @@ export interface ReglaNegocio {
 	id: string;
 	descripcion: string;
 }
+
+export const METODOS_HTTP = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
+export type MetodoHttp = (typeof METODOS_HTTP)[number];
+
+/** Una respuesta declarada en el contrato: método, ruta (con plantillas como {id}) y código HTTP. */
+export interface RespuestaContrato {
+	metodo: MetodoHttp;
+	ruta: string;
+	http: number;
+}
+
+/** Restricciones de un campo de request. Los campos de listas de objetos usan la forma `productos[].id`. */
+export interface CampoContrato {
+	campo: string;
+	tipo: string;
+	obligatorio: boolean;
+	minLength?: number;
+	maxLength?: number;
+	minimum?: number;
+	multipleOf?: number;
+	minItems?: number;
+	enum?: string[];
+}
+
+export interface EsquemaRequest {
+	nombre: string;
+	campos: CampoContrato[];
+}
+
+export interface Contrato {
+	respuestas: RespuestaContrato[];
+	esquemasRequest: EsquemaRequest[];
+}
