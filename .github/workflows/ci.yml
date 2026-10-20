@@ -1,0 +1,110 @@
+name: CI
+
+# Quality gates (ADR-010): compilación estricta, pruebas, cobertura >= 80 % y mutation score >= 70 %.
+# Actions fijadas por SHA de commit (cadena de suministro); la versión va en el comentario.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configurar Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilación estricta
+        run: npm run typecheck
+
+      - name: Pruebas y cobertura (umbral 80 %)
+        run: npm run test:coverage
+
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          const file = 'coverage/coverage-summary.json';
+          if (!fs.existsSync(file)) { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, 'Sin reporte de cobertura\n'); process.exit(0); }
+          const t = JSON.parse(fs.readFileSync(file, 'utf8')).total;
+          const row = (name, m) => '| ' + name + ' | ' + m.pct + ' % (' + m.covered + '/' + m.total + ') |';
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            '### Cobertura (Vitest, umbral 80 %)', '| Métrica | Valor |', '|---|---|',
+            row('Líneas', t.lines), row('Ramas', t.branches), row('Funciones', t.functions), ''
+          ].join('\n'));"
+
+      - name: Publicar reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cobertura
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  mutation:
+    name: mutation
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configurar Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Mutation testing con Stryker (umbral 70 %)
+        run: npm run mutation
+
+      - name: Resumen de mutación
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          const file = 'reports/mutation/mutation.json';
+          if (!fs.existsSync(file)) { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, 'Sin reporte de mutación\n'); process.exit(0); }
+          const mutants = Object.values(JSON.parse(fs.readFileSync(file, 'utf8')).files).flatMap((f) => f.mutants);
+          const valid = mutants.filter((m) => !['CompileError', 'RuntimeError', 'Ignored'].includes(m.status));
+          const detected = valid.filter((m) => ['Killed', 'Timeout'].includes(m.status)).length;
+          const score = valid.length ? (100 * detected / valid.length).toFixed(1) + ' %' : 'sin mutantes';
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            '### Mutation testing (Stryker, umbral 70 %)', '| Métrica | Valor |', '|---|---|',
+            '| Mutantes detectados | ' + detected + '/' + valid.length + ' |', '| Mutation score | ' + score + ' |', ''
+          ].join('\n'));"
+
+      - name: Publicar reporte de mutación
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutacion
+          path: reports/mutation/
+          if-no-files-found: ignore
+          retention-days: 14
