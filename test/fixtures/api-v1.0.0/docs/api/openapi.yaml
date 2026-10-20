@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: RTBC Orders API
+  version: 0.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  description: |
+    API REST para la gestión de órdenes de compra.
+    Contrato de diseño (Fase 0): la implementación debe cumplirlo.
+    Reglas de negocio RN-01..RN-06 y decisiones en docs/decisiones.md.
+    Sin autenticación: fuera del alcance de esta versión (declarado explícitamente con `security: []`).
+servers:
+  - url: http://localhost:8080
+    description: Local / Docker
+security: []
+tags:
+  - name: orders
+    description: Gestión de órdenes de compra y sus transiciones de estado
+paths:
+  /orders:
+    parameters:
+      - $ref: '#/components/parameters/RequestId'
+    post:
+      tags: [orders]
+      summary: Crear orden
+      description: |
+        Crea una orden en estado CREADA. El total se calcula en el servidor (RN-03);
+        si el request incluye `total` o `estado`, se ignoran.
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              cliente: Juan Pérez
+              productos:
+                - id: P001
+                  cantidad: 2
+                  valorUnitario: 100000
+      responses:
+        '201':
+          description: Orden creada
+          headers:
+            Location:
+              description: URL de la orden creada
+              schema:
+                type: string
+                example: /orders/3fa85f64-5717-4562-b3fc-2c963f66afa6
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+    get:
+      tags: [orders]
+      summary: Listar órdenes
+      description: Devuelve todas las órdenes, sin paginación (ADR-010).
+      operationId: listOrders
+      responses:
+        '200':
+          description: Lista de órdenes (vacía si no hay)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+  /orders/{id}:
+    parameters:
+      - $ref: '#/components/parameters/RequestId'
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      tags: [orders]
+      summary: Consultar orden
+      operationId: getOrder
+      responses:
+        '200':
+          description: Orden encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [orders]
+      summary: Cancelar orden
+      description: |
+        Cancelación lógica: cambia el estado a CANCELADA (no borra el registro).
+        Misma regla que PATCH con estado CANCELADA (ADR-006).
+      operationId: cancelOrder
+      responses:
+        '200':
+          description: Orden cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InvalidTransition'
+  /orders/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/RequestId'
+      - $ref: '#/components/parameters/OrderId'
+    patch:
+      tags: [orders]
+      summary: Actualizar estado
+      description: Aplica una transición según docs/maquina-estados.md.
+      operationId: updateOrderStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+            example:
+              estado: PAGADA
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Estado desconocido/ausente (VALIDACION) o enviar sin pagar (ORDEN_NO_PAGADA, RN-05)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                noPagada:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: La orden no puede ser enviada si no ha sido pagada
+                    instance: /orders/3fa85f64-5717-4562-b3fc-2c963f66afa6/status
+                    codigo: ORDEN_NO_PAGADA
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InvalidTransition'
+components:
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: Id de correlación (ADR-019). Se reutiliza si cumple [A-Za-z0-9._-]{1,64}; si no, se genera un UUID. La respuesta siempre lo devuelve en el mismo header
+      schema:
+        type: string
+        maxLength: 64
+    OrderId:
+      name: id
+      in: path
+      required: true
+      description: UUID de la orden; formato inválido → 400
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    OrderStatus:
+      type: string
+      enum: [CREADA, PAGADA, ENVIADA, ENTREGADA, CANCELADA]
+    ProductLine:
+      type: object
+      required: [id, cantidad, valorUnitario]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: P001
+        cantidad:
+          type: integer
+          minimum: 1
+          description: Mayor que cero (RN-02)
+          example: 2
+        valorUnitario:
+          type: number
+          minimum: 0.01
+          multipleOf: 0.01
+          description: Mayor que cero, máximo 2 decimales. Las respuestas lo expresan siempre con 2 decimales
+          example: 100000
+    CreateOrderRequest:
+      type: object
+      required: [cliente, productos]
+      properties:
+        cliente:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Juan Pérez
+        productos:
+          type: array
+          minItems: 1
+          description: Al menos un producto (RN-01)
+          items:
+            $ref: '#/components/schemas/ProductLine'
+    UpdateStatusRequest:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          $ref: '#/components/schemas/OrderStatus'
+    Order:
+      type: object
+      required: [id, cliente, productos, total, estado]
+      properties:
+        id:
+          type: string
+          format: uuid
+        cliente:
+          type: string
+        productos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductLine'
+        total:
+          type: number
+          description: Σ cantidad × valorUnitario, calculado en servidor (RN-03), siempre con 2 decimales
+          example: 200000
+        estado:
+          $ref: '#/components/schemas/OrderStatus'
+    FieldError:
+      type: object
+      properties:
+        campo:
+          type: string
+          example: productos[0].cantidad
+        mensaje:
+          type: string
+          example: debe ser mayor que 0
+    Problem:
+      type: object
+      description: RFC 9457 + extensiones `codigo` y `errores` (ADR-009)
+      required: [status, codigo]
+      properties:
+        type:
+          type: string
+          example: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        codigo:
+          type: string
+          enum: [VALIDACION, ORDEN_NO_PAGADA, ORDEN_NO_ENCONTRADA, TRANSICION_INVALIDA, ERROR_INTERNO]
+          description: ERROR_INTERNO solo en respuestas 500, sin detalles internos (R06)
+        errores:
+          type: array
+          description: Solo en errores de validación de campos
+          items:
+            $ref: '#/components/schemas/FieldError'
+  responses:
+    ValidationError:
+      description: Request inválido (VALIDACION)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Bad Request
+            status: 400
+            detail: La solicitud contiene errores de validación
+            instance: /orders
+            codigo: VALIDACION
+            errores:
+              - campo: productos
+                mensaje: la orden debe contener al menos un producto
+    NotFound:
+      description: Orden inexistente (ORDEN_NO_ENCONTRADA)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Not Found
+            status: 404
+            detail: No existe la orden 3fa85f64-5717-4562-b3fc-2c963f66afa6
+            instance: /orders/3fa85f64-5717-4562-b3fc-2c963f66afa6
+            codigo: ORDEN_NO_ENCONTRADA
+    InvalidTransition:
+      description: Transición inválida desde el estado actual (TRANSICION_INVALIDA, RN-04/RN-06)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Conflict
+            status: 409
+            detail: No se puede pasar de ENTREGADA a CANCELADA
+            instance: /orders/3fa85f64-5717-4562-b3fc-2c963f66afa6
+            codigo: TRANSICION_INVALIDA
