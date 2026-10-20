@@ -6,15 +6,14 @@ import { AccesoDenegadoError, ArchivoNoEncontradoError } from '../../src/sources
 import { abrirRepositorio } from '../../src/sources/repositorio.js';
 import { RAIZ_API } from '../fixtures.js';
 
+// El repositorio se abre dentro de cada prueba: así cada mutante de Stryker se evalúa en la prueba que lo ejecuta
 describe('Repositorio de la API (Q04: solo lectura y dentro del repositorio)', () => {
-	const repo = abrirRepositorio(RAIZ_API);
-
 	it('lee un archivo por su ruta relativa', () => {
-		expect(repo.leer('docs/api/openapi.yaml')).toContain('openapi: 3.0.3');
+		expect(abrirRepositorio(RAIZ_API).leer('docs/api/openapi.yaml')).toContain('openapi: 3.0.3');
 	});
 
 	it('lista los archivos de un directorio con una extensión, recursivamente y en orden estable', () => {
-		expect(repo.listar('src/test/resources/acceptance', '.feature')).toEqual([
+		expect(abrirRepositorio(RAIZ_API).listar('src/test/resources/acceptance', '.feature')).toEqual([
 			'src/test/resources/acceptance/cancelar.feature',
 			'src/test/resources/acceptance/consultar.feature',
 			'src/test/resources/acceptance/crear.feature',
@@ -28,19 +27,19 @@ describe('Repositorio de la API (Q04: solo lectura y dentro del repositorio)', (
 	});
 
 	it.each(['../package.json', 'docs/../../package.json', '..'])('rechaza la ruta "%s" que sale del repositorio', (ruta) => {
-		expect(() => repo.leer(ruta)).toThrow(AccesoDenegadoError);
+		expect(() => abrirRepositorio(RAIZ_API).leer(ruta)).toThrow(AccesoDenegadoError);
 	});
 
 	it('rechaza una ruta absoluta', () => {
-		expect(() => repo.leer(join(RAIZ_API, 'README.md'))).toThrow(AccesoDenegadoError);
+		expect(() => abrirRepositorio(RAIZ_API).leer(join(RAIZ_API, 'README.md'))).toThrow(AccesoDenegadoError);
 	});
 
 	it('rechaza listar fuera del repositorio', () => {
-		expect(() => repo.listar('..', '.ts')).toThrow(AccesoDenegadoError);
+		expect(() => abrirRepositorio(RAIZ_API).listar('..', '.ts')).toThrow(AccesoDenegadoError);
 	});
 
 	it('informa la ruta de un archivo inexistente', () => {
-		expect(() => repo.leer('docs/no-existe.md')).toThrow(new ArchivoNoEncontradoError('docs/no-existe.md'));
+		expect(() => abrirRepositorio(RAIZ_API).leer('docs/no-existe.md')).toThrow(new ArchivoNoEncontradoError('docs/no-existe.md'));
 	});
 
 	it('rechaza abrir un repositorio que no existe', () => {
