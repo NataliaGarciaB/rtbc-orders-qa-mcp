@@ -51,6 +51,16 @@ describe('Lector de la matriz de riesgos (docs/qa/estrategia-pruebas.md)', () =>
 			expect(() => leerRiesgos(original.replace('**9 Alto**', '**9 Crítico**'))).toThrow(esperado);
 		});
 
+		it('sin la columna RN: no devuelve riesgos sin sus reglas', () => {
+			expect(() => leerRiesgos(original.replace('| Riesgo | RN | P |', '| Riesgo | Reglas | P |'))).toThrow(esperado);
+		});
+
+		it('sin riesgos en la tabla', () => {
+			const sinRiesgos = original.replace(/^\| R\d{2} .*\r?\n/gm, '');
+			expect(sinRiesgos).not.toContain('| R01 |');
+			expect(() => leerRiesgos(sinRiesgos)).toThrow(esperado);
+		});
+
 		it('con un nivel sin puntaje', () => {
 			expect(() => leerRiesgos(original.replace('**9 Alto**', '**Alto**'))).toThrow(esperado);
 		});
@@ -80,6 +90,20 @@ describe('Lector de las reglas de negocio (README.md)', () => {
 
 		it('sin la sección', () => {
 			expect(() => leerReglasNegocio(original.replace('### Reglas de negocio', '### Reglas'))).toThrow(esperado);
+		});
+
+		it('con otro título de columna', () => {
+			expect(() => leerReglasNegocio(original.replace('| Regla | Descripción |', '| Regla | Detalle |'))).toThrow(esperado);
+		});
+
+		it('sin reglas en la tabla', () => {
+			const sinReglas = original.replace(/^\| RN-\d{2} .*\r?\n/gm, '');
+			expect(sinReglas).not.toContain('| RN-01 |');
+			expect(() => leerReglasNegocio(sinReglas)).toThrow(esperado);
+		});
+
+		it('con un identificador con prefijo', () => {
+			expect(() => leerReglasNegocio(original.replace('| RN-01 |', '| XRN-01 |'))).toThrow(esperado);
 		});
 
 		it('con un identificador que no es RN-xx', () => {
